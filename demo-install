@@ -1,0 +1,53 @@
+#!/bin/sh
+# 
+# Copyright (C) 2015 Red Hat Inc.
+# Author: Salim Badakhchani <sal@redhat.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>. 
+#
+########################################################################
+
+# Set up stable versions of binaries
+yum -y install java
+yum -y install git
+wget http://apache.arvixe.com/maven/maven-3/3.3.3/binaries/apache-maven-3.3.3-bin.tar.gz
+tar zxfv apache-maven-3.3.3-bin.tar.gz -C /usr/lib/
+wget -O /etc/yum.repos.d/jenkins.repo http://pkg.jenkins-ci.org/redhat-stable/jenkins.repo
+rpm --import https://jenkins-ci.org/redhat/jenkins-ci.org.key
+yum -y install jenkins
+
+# Setup environment
+JDK=$(rpm -qa | grep openjdk | sort -n | tail -1)
+alternatives --install /usr/bin/java java /usr/lib/jvm/${JDK}/bin/java 0
+alternatives --install /usr/bin/mvn mvn /usr/lib/apache-maven-3.3.3/bin/mvn 0
+
+# Start up Jenkins
+chkconfig jenkins on
+service jenkins start
+
+# Initialise plugin list
+curl -L http://updates.jenkins-ci.org/update-center.json | sed '1d;$d' | \
+curl -X POST -H 'Accept: application/json' -d @- http://localhost:8080/updateCenter/byId/default/postBack
+
+# Retrieve jenkins client
+wget http://localhost:8080/jnlpJars/jenkins-cli.jar
+
+# Install plugins
+java -jar jenkins-cli.jar -s http://localhost:8080 install-plugin git
+java -jar jenkins-cli.jar -s http://localhost:8080 install-plugin openshift-deployer
+java -jar jenkins-cli.jar -s http://localhost:8080 install-plugin delivery-pipeline-plugin
+java -jar jenkins-cli.jar -s http://localhost:8080 install-plugin promoted-builds
+
+# Restart Jenkins server
+service jenkins restart
