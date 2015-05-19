@@ -19,13 +19,11 @@
 ########################################################################
 
 # Set up stable versions of binaries
-yum -y install java
-yum -y install git
 wget http://apache.arvixe.com/maven/maven-3/3.3.3/binaries/apache-maven-3.3.3-bin.tar.gz
 tar zxfv apache-maven-3.3.3-bin.tar.gz -C /usr/lib/
 wget -O /etc/yum.repos.d/jenkins.repo http://pkg.jenkins-ci.org/redhat-stable/jenkins.repo
 rpm --import https://jenkins-ci.org/redhat/jenkins-ci.org.key
-yum -y install jenkins
+yum -y install java jenkins mail
 
 # Setup environment
 JDK=$(rpm -qa | grep openjdk | sort -n | tail -1)
@@ -43,11 +41,11 @@ curl -X POST -H 'Accept: application/json' -d @- http://localhost:8080/updateCen
 # Retrieve jenkins client
 wget http://localhost:8080/jnlpJars/jenkins-cli.jar
 
-# Install plugins
-java -jar jenkins-cli.jar -s http://localhost:8080 install-plugin git
-java -jar jenkins-cli.jar -s http://localhost:8080 install-plugin openshift-deployer
-java -jar jenkins-cli.jar -s http://localhost:8080 install-plugin delivery-pipeline-plugin
-java -jar jenkins-cli.jar -s http://localhost:8080 install-plugin promoted-builds
+# Install plugins - Not needed if using the vanilla archive
+#java -jar jenkins-cli.jar -s http://localhost:8080 install-plugin git
+#java -jar jenkins-cli.jar -s http://localhost:8080 install-plugin openshift-deployer
+#java -jar jenkins-cli.jar -s http://localhost:8080 install-plugin delivery-pipeline-plugin
+#java -jar jenkins-cli.jar -s http://localhost:8080 install-plugin promoted-builds
 
 # Restart Jenkins server
 service jenkins restart
